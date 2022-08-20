@@ -1,0 +1,20 @@
+{
+  "diagnostic.errorSign": "✖",
+  "diagnostic.warningSign": "⚑",
+  "diagnostic.infoSign": "⚑",
+  "diagnostic.hintSign": "⚑",
+  "coc.preferences.formatOnSaveFiletypes": [
+    "css",
+    "html",
+    "javascript",
+    "javascript.jsx",
+    "json",
+    "typescript",
+    "typescript.tsx",
+    "typscriptreact"
+  ],
+  "tsserver.formatOnType": false,
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+}
+}
