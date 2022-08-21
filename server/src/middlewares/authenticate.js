@@ -47,30 +47,49 @@ var authGuard = function (req, res, next) { return __awaiter(void 0, void 0, voi
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
-                token = "";
                 if (!(req.headers.authorization &&
-                    req.headers.authorization.startsWith("Bearer"))) return [3 /*break*/, 4];
+                    req.headers.authorization.startsWith("Bearer"))) return [3 /*break*/, 5];
                 _b.label = 1;
             case 1:
                 _b.trys.push([1, 3, , 4]);
                 token = req.headers.authorization.split(" ")[1];
                 decoded = jsonwebtoken_1.default.verify(token, process.env.ACCESS_TOKEN);
+                /* req.user: {
+                    _id: new ObjectId("62fd9f3036e6fe1f5552de47"),
+                    username: 'aa@aa.com',
+                    email: 'aa@aa.com',
+                    ...
+                    __v: 1  }
+                 */
+                // select("-password"): 表示排除掉 password 字段，不放到 req.user 里。
+                // req.user 是在下面的 next() 里传递给下一个中间件的。
+                // 也就是说，下一个中间件可以直接使用 req.user 来获取用户信息。
                 _a = req;
                 return [4 /*yield*/, User_1.default.findById(decoded.id).select("-password")];
             case 2:
+                /* req.user: {
+                    _id: new ObjectId("62fd9f3036e6fe1f5552de47"),
+                    username: 'aa@aa.com',
+                    email: 'aa@aa.com',
+                    ...
+                    __v: 1  }
+                 */
+                // select("-password"): 表示排除掉 password 字段，不放到 req.user 里。
+                // req.user 是在下面的 next() 里传递给下一个中间件的。
+                // 也就是说，下一个中间件可以直接使用 req.user 来获取用户信息。
                 _a.user = _b.sent();
                 next();
                 return [3 /*break*/, 4];
             case 3:
                 error_1 = _b.sent();
-                (error_1);
+                (error_1); // 401 Unauthorized Error
                 res.status(401).json({ message: "Token failed ,you are not authorized" });
                 return [3 /*break*/, 4];
-            case 4:
-                if (!token) {
-                    res.status(401).json({ message: "Token failed, no token provided" });
-                }
-                return [2 /*return*/];
+            case 4: return [3 /*break*/, 6];
+            case 5:
+                res.status(401).json({ message: "Token failed, no token provided" });
+                _b.label = 6;
+            case 6: return [2 /*return*/];
         }
     });
 }); };

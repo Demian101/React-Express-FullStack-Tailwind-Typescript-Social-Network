@@ -9,7 +9,7 @@ var router = (0, express_1.Router)();
 router.post("/login", userController_1.loginUser);
 router
     .route("/")
-    .post(upload_1.upload.single("avatar"), userController_1.registerUser)
+    //.post(upload.single("avatar"), registerUser)
     .get(authenticate_1.authGuard, userController_1.getAllUsers);
 /* router.route("/refresh").post(refreshAuth); */
 router.route("/:id").get(userController_1.getUserById);

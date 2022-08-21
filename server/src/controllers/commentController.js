@@ -124,8 +124,8 @@ var addComment = function (req, res) { return __awaiter(void 0, void 0, void 0, 
             case 0:
                 _a = req.user, avatar = _a.avatar, username = _a.username;
                 _b = req.body, content = _b.content, createdAt = _b.createdAt, id = _b.id;
-                //  “评论内容” undefined 62f87cd7ddb48d4a5b85d300 
-                console.log("content, createdAt, id ", content, createdAt, id);
+                //  “评论内容”  62f87cd7ddb48d4a5b85d300 
+                console.log("content, id ", content, id);
                 newComment = new Comment_1.default({
                     postID: id,
                     avatar: avatar,

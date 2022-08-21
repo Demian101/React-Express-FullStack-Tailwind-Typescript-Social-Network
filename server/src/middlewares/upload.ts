@@ -3,9 +3,9 @@ import { Request } from 'express';
 import multer from 'multer';
 import path from 'path';
 
-const storage:multer.StorageEngine = multer.diskStorage({
-    destination: (req:Request, file:any, cb:any) => {
-        cb(null, 'public/')
+const storage: multer.StorageEngine = multer.diskStorage({
+    destination: (req: Request, file: any, cb: any) => {
+        cb(null, 'public/') // callback function
     },
     filename: (req:Request, file:any, cb:any) => {
         let ext = path.extname(file.originalname)
@@ -13,6 +13,5 @@ const storage:multer.StorageEngine = multer.diskStorage({
     }
 })
 
-const upload = multer({
-})
+const upload = multer({})
 export { upload };

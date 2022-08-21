@@ -6,6 +6,7 @@ import Post, { IPost } from "../models/Post";
 import User from "../models/User";
 // Get all posts from database
 
+// 广场上的公共推文
 const getPublicPosts = async (req: Request, res: Response) => {
   const posts = await Post.find({ visibility: "public" }).sort({
     createdAt: -1,
@@ -18,7 +19,7 @@ const getPublicPosts = async (req: Request, res: Response) => {
   }
 };
 
-// Get posts by user id
+// Get posts by user id，点击某用户界面，查看其个人推文；
 const getPrivatePosts = async (req: Request, res: Response) => {
   const posts = await Post.find({ user: req.user._id }).sort({ createdAt: -1 });
   if (posts) {
@@ -38,6 +39,7 @@ const getPostById = async (req: Request, res: Response) => {
     res.status(404).send("Post not found");
   }
 };
+
 let streamUpload = (req: any) => {
   return new Promise((resolve, reject) => {
     let stream = cloudinary.v2.uploader.upload_stream( {
@@ -49,8 +51,7 @@ let streamUpload = (req: any) => {
         reject(error);
       }
     });
-
-      streamifier.createReadStream(req.file.buffer).pipe(stream);
+    streamifier.createReadStream(req.file.buffer).pipe(stream);
   });
 };
 
@@ -60,20 +61,19 @@ const deletePost = async (req: Request, res: Response) => {
   const userId: string = req?.user?._id;
   const post = await Post.findOne({ _id: postId });
   const postUserId: string | any = post?.user;
-try{
-  if (postUserId?.toString() === userId?.toString()) {
-    const deletePostById = await Post.findByIdAndDelete(postId);
-  const deletePostComments = await Comment.deleteMany({ postID: postId });
-   if(post?.image) {
-    cloudinary.v2.uploader.destroy(post.image);
-   }
-    res.status(200).json({ message: "Post deleted successfully" });
-  } 
-}
-catch(err) {
-  res.status(500).send({ message: "Something goes wrong" });
-}
-
+  try{
+    if (postUserId?.toString() === userId?.toString()) {
+      const deletePostById = await Post.findByIdAndDelete(postId);
+      const deletePostComments = await Comment.deleteMany({ postID: postId });
+      if(post?.image) {
+        cloudinary.v2.uploader.destroy(post.image);
+      }
+      res.status(200).json({ message: "Post deleted successfully" });
+    }
+  }
+  catch(err) {
+    res.status(500).send({ message: "Something goes wrong" });
+  }
 };
 
 // A Request which can like a post
@@ -99,7 +99,8 @@ const unlikePost = async (req: Request, res: Response) => {
     return err;
   }
 };
-//A Request which can  create posts
+
+// A Request which can create posts
 const addPost = async (req: Request, res: Response) => {
   const post: IPost = new Post({
     user: req.user._id,
@@ -128,6 +129,7 @@ const addPost = async (req: Request, res: Response) => {
     res.status(404).send("Error while creating post");
   }
 };
+
 export {
   addPost,
   getPublicPosts,
@@ -136,4 +138,3 @@ export {
   getPrivatePosts,
   deletePost,
 };
-

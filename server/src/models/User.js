@@ -42,34 +42,19 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var mongoose_1 = require("mongoose");
 var bcryptjs_1 = __importDefault(require("bcryptjs"));
 var UserSchema = new mongoose_1.Schema({
-    username: {
-        type: String,
-    },
-    email: {
-        type: String,
-        required: true,
-        unique: true,
-    },
-    password: {
-        type: String,
-        required: true,
-    },
+    username: { type: String, },
+    email: { type: String, required: true, unique: true, },
+    password: { type: String, required: true, },
     avatar: {
         type: String,
         default: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQdGr3fTJlsjdAEiSCDznslzUJXqeI22hIB20aDOvQsf9Hz93yoOiLaxnlPEA&s",
     },
-    posts: [
-        { type: mongoose_1.Schema.Types.ObjectId,
-            ref: "Post" }
-    ],
-    following: [
-        {
-            type: mongoose_1.Schema.Types.ObjectId,
-            ref: "User",
-        },
-    ],
+    posts: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "Post" }],
+    following: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "User" }],
     followers: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "User" }],
 }, { collection: "users", timestamps: true });
+// 比较客户端传过来的密码，和数据库中是否一致
+// this.password 即 UserSchema 的实例的 password 字段，即数据库中的 password 字段
 UserSchema.methods.matchPassword = function (enteredPassword) {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
@@ -80,16 +65,13 @@ UserSchema.methods.matchPassword = function (enteredPassword) {
         });
     });
 };
+// 加 salt 保存加密密码到数据库
 UserSchema.pre("save", function (next) {
     return __awaiter(this, void 0, void 0, function () {
         var salt, _a;
         return __generator(this, function (_b) {
             switch (_b.label) {
-                case 0:
-                    if (!this.isModified('password')) {
-                        next();
-                    }
-                    return [4 /*yield*/, bcryptjs_1.default.genSalt(10)];
+                case 0: return [4 /*yield*/, bcryptjs_1.default.genSalt(10)];
                 case 1:
                     salt = _b.sent();
                     _a = this;

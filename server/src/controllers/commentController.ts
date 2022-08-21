@@ -50,8 +50,8 @@ const addComment = async (req: Request, res: Response) => {
   const { avatar, username } = req.user;
   const { content, createdAt, id } = req.body;
   
-  //  “评论内容” undefined 62f87cd7ddb48d4a5b85d300 
-  console.log("content, createdAt, id ", content, createdAt, id )
+  //  “评论内容”  62f87cd7ddb48d4a5b85d300 
+  console.log("content, id ", content, id )
 
   const newComment = new Comment({
     postID: id,

@@ -46,6 +46,7 @@ var Comment_1 = __importDefault(require("../models/Comment"));
 var Post_1 = __importDefault(require("../models/Post"));
 var User_1 = __importDefault(require("../models/User"));
 // Get all posts from database
+// 广场上的公共推文
 var getPublicPosts = function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
     var posts;
     return __generator(this, function (_a) {
@@ -67,7 +68,7 @@ var getPublicPosts = function (req, res) { return __awaiter(void 0, void 0, void
     });
 }); };
 exports.getPublicPosts = getPublicPosts;
-// Get posts by user id
+// Get posts by user id，点击某用户界面，查看其个人推文；
 var getPrivatePosts = function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
     var posts;
     return __generator(this, function (_a) {
@@ -200,7 +201,7 @@ var unlikePost = function (req, res) { return __awaiter(void 0, void 0, void 0, 
     });
 }); };
 exports.unlikePost = unlikePost;
-//A Request which can  create posts
+// A Request which can create posts
 var addPost = function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
     var post, result, userById, newPost, pushedPost;
     return __generator(this, function (_a) {

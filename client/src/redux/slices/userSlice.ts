@@ -39,7 +39,7 @@ export const userSlice = createSlice({
   initialState,
   reducers: {
     addNewUser: (state, { payload }: PayloadAction<IUser>) => {
-      console.log('payload: ',payload)
+      // console.log('payload: ',payload)
       state.currentUser = payload;
     },
     logoutUser: (state) => {    // 登出

@@ -10,17 +10,13 @@ import commentRoutes from "./routes/commentRoutes";
 import postRoutes from "./routes/postRoutes";
 import userRoutes from "./routes/userRoutes";
 
-
-dotenv.config({
-  path:"./.env"
-});
+// loads environment variables from a `.env` file into `process.env`. 
+dotenv.config({ path:"./.env"  });
 
 // define port
 const PORT =  process.env.PORT || 8090;
 console.log("Port is : ", process.env.PORT)
 console.log("CLOUDINARY_API_SECRET is : ", process.env.CLOUDINARY_API_SECRET)
-
-
 
 // initialize express
 const app: Express = express();
@@ -40,18 +36,13 @@ connectDb();
 // });
 
 cloudinary.v2.config({
-  cloud_name: "dk8z3ef82",
-  api_key: "711728519188514",
-  api_secret: "KBhbiW3Jak0Bn3gbfy_cfPT2_HE",
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-
-// initialize cors
-app.use(cors({
-  origin: "*",
-  credentials:true,
-}));
-
+// initialize cors 处理跨域问题
+app.use(cors({ origin: "*", credentials:true, }));
 
 // Other Middlewares
 app.use(compression());
@@ -59,6 +50,7 @@ app.use(compression());
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
 // Routes
 app.get("/", (req: Request, res: Response) => {
   res.send('<h1>Social Network API</h1>');

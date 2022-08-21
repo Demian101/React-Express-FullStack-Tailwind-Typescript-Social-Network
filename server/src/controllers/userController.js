@@ -48,7 +48,6 @@ var Post_1 = __importDefault(require("../models/Post"));
 var User_1 = __importDefault(require("../models/User"));
 var generateToken_1 = require("../utils/generateToken");
 var refreshTokens = [];
-// Login Route
 var loginUser = function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
     var _a, email, password, user, _b, accessToken, err_1;
     return __generator(this, function (_c) {
@@ -66,8 +65,14 @@ var loginUser = function (req, res, next) { return __awaiter(void 0, void 0, voi
                 _b = (_c.sent());
                 _c.label = 3;
             case 3:
+                /*
+                  使用 matchPassword 对比 [前端] 传的 password 和 [数据库] 里的 password
+                  matchPassword: bcrypt.compare(enteredPassword, this.password);
+                   - `this.password` is the hashed password in the database, 是 UserSchema 实例的 password。
+                 */
                 if (_b) {
                     accessToken = (0, generateToken_1.generateAccessToken)(user._id);
+                    // 响应给客户端 /login 的 response ：
                     res.json({
                         _id: user._id,
                         username: user.username,
@@ -101,7 +106,6 @@ var streamUpload = function (req) {
         streamifier_1.default.createReadStream(req.file.buffer).pipe(stream);
     });
 };
-// Register Route
 var registerUser = function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
     var _a, username, email, avatar, password, posts, userExists, user, result, savedUser, accessToken, refreshToken, err_2;
     return __generator(this, function (_b) {
@@ -113,14 +117,10 @@ var registerUser = function (req, res, next) { return __awaiter(void 0, void 0, 
             case 1:
                 userExists = _b.sent();
                 if (!userExists) return [3 /*break*/, 2];
-                res.status(404).json({ message: "User already exists" });
+                res.status(409).json({ message: "User already exists" });
                 return [3 /*break*/, 6];
             case 2:
-                user = new User_1.default({
-                    username: username,
-                    email: email,
-                    password: password,
-                });
+                user = new User_1.default({ username: username, email: email, password: password, });
                 if (!(req === null || req === void 0 ? void 0 : req.file)) return [3 /*break*/, 4];
                 return [4 /*yield*/, streamUpload(req)];
             case 3:
@@ -132,6 +132,9 @@ var registerUser = function (req, res, next) { return __awaiter(void 0, void 0, 
                 savedUser = _b.sent();
                 accessToken = (0, generateToken_1.generateAccessToken)(savedUser._id);
                 refreshToken = (0, generateToken_1.generateRefreshToken)(savedUser._id);
+                /* 将 accessToken 响应给客户端，客户端将 accessToken 存储在 localStorage 中
+                   之后客户端每次请求都会带上 accessToken, 服务端会验证 accessToken, 确认用户身份,
+                   然后响应数据, 或者拒绝请求, 返回 401, 403 等错误码, 以及错误信息 */
                 res.json({
                     _id: savedUser._id,
                     username: savedUser.username,
@@ -151,16 +154,23 @@ var registerUser = function (req, res, next) { return __awaiter(void 0, void 0, 
 }); };
 exports.registerUser = registerUser;
 var getAllUsers = function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
-    var users;
+    var users, err_3;
     return __generator(this, function (_a) {
         switch (_a.label) {
-            case 0: return [4 /*yield*/, User_1.default.find({ _id: { $ne: req.user._id } })
-                    .sort({ createdAt: -1 })
-                    .select("-password")];
+            case 0:
+                _a.trys.push([0, 2, , 3]);
+                return [4 /*yield*/, User_1.default.find({ _id: { $ne: req.user._id } })
+                        .sort({ createdAt: -1 })
+                        .select("-password")];
             case 1:
                 users = _a.sent();
                 res.json(users);
-                return [2 /*return*/];
+                return [3 /*break*/, 3];
+            case 2:
+                err_3 = _a.sent();
+                res.status(500).json({ message: "Something went wrong" });
+                return [3 /*break*/, 3];
+            case 3: return [2 /*return*/];
         }
     });
 }); };
@@ -188,7 +198,7 @@ var refreshAuth = function (req, res, next) { return __awaiter(void 0, void 0, v
     });
 }); };
 var getUserById = function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
-    var userId, user, err_3;
+    var userId, user, err_4;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -204,7 +214,7 @@ var getUserById = function (req, res, next) { return __awaiter(void 0, void 0, v
                 }
                 return [3 /*break*/, 3];
             case 2:
-                err_3 = _a.sent();
+                err_4 = _a.sent();
                 res.status(404).json({ message: "User not found" });
                 return [3 /*break*/, 3];
             case 3: return [2 /*return*/];
@@ -213,7 +223,7 @@ var getUserById = function (req, res, next) { return __awaiter(void 0, void 0, v
 }); };
 exports.getUserById = getUserById;
 var followUser = function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
-    var followUser_1, user, err_4;
+    var followUser_1, user, err_5;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -230,7 +240,7 @@ var followUser = function (req, res, next) { return __awaiter(void 0, void 0, vo
                 _a.label = 4;
             case 4: return [2 /*return*/, res.status(200).send({ message: "User followed successfully" })];
             case 5:
-                err_4 = _a.sent();
+                err_5 = _a.sent();
                 return [2 /*return*/, res
                         .status(500)
                         .send({ message: "Error while tried to follow a user" })];
@@ -240,7 +250,7 @@ var followUser = function (req, res, next) { return __awaiter(void 0, void 0, vo
 }); };
 exports.followUser = followUser;
 var unfollowUser = function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-    var unfollowingUser, err_5;
+    var unfollowingUser, err_6;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -252,7 +262,7 @@ var unfollowUser = function (req, res) { return __awaiter(void 0, void 0, void 0
                 unfollowingUser = _a.sent();
                 return [2 /*return*/, res.status(200).send({ message: "User unfollowed successfully" })];
             case 2:
-                err_5 = _a.sent();
+                err_6 = _a.sent();
                 return [2 /*return*/, res.status(500).send({ message: "User UnFollow Failed" })];
             case 3: return [2 /*return*/];
         }
@@ -260,7 +270,7 @@ var unfollowUser = function (req, res) { return __awaiter(void 0, void 0, void 0
 }); };
 exports.unfollowUser = unfollowUser;
 var getUserFollowers = function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-    var currentUser, followersArr, err_6;
+    var currentUser, followersArr, err_7;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -272,11 +282,11 @@ var getUserFollowers = function (req, res) { return __awaiter(void 0, void 0, vo
             case 2:
                 followersArr = _a.sent();
                 if (followersArr) {
-                    res.json({ data: followersArr, message: "Data found" });
+                    res.json({ data: followersArr, message: "Followers found" });
                 }
                 return [3 /*break*/, 4];
             case 3:
-                err_6 = _a.sent();
+                err_7 = _a.sent();
                 res.status(500).json({ message: "Error while trying to get followers" });
                 return [3 /*break*/, 4];
             case 4: return [2 /*return*/];
@@ -285,7 +295,7 @@ var getUserFollowers = function (req, res) { return __awaiter(void 0, void 0, vo
 }); };
 exports.getUserFollowers = getUserFollowers;
 var searchUsers = function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-    var userVal, usersArr, err_7;
+    var userVal, usersArr, err_8;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -297,7 +307,7 @@ var searchUsers = function (req, res) { return __awaiter(void 0, void 0, void 0,
                 res.status(200).json(usersArr);
                 return [3 /*break*/, 3];
             case 2:
-                err_7 = _a.sent();
+                err_8 = _a.sent();
                 res.status(404).json({ message: "No user found" });
                 return [3 /*break*/, 3];
             case 3: return [2 /*return*/];
@@ -306,7 +316,7 @@ var searchUsers = function (req, res) { return __awaiter(void 0, void 0, void 0,
 }); };
 exports.searchUsers = searchUsers;
 var editUser = function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-    var _a, username, email, avatar, result, editedUser, posts, i, comments, i, err_8;
+    var _a, username, email, avatar, result, editedUser, posts, i, comments, i, err_9;
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
@@ -369,7 +379,7 @@ var editUser = function (req, res) { return __awaiter(void 0, void 0, void 0, fu
                 res.status(200).json(editedUser);
                 return [3 /*break*/, 15];
             case 14:
-                err_8 = _b.sent();
+                err_9 = _b.sent();
                 res.status(500).json({ message: "Error while trying to edit user" });
                 return [3 /*break*/, 15];
             case 15: return [2 /*return*/];

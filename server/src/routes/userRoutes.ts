@@ -6,15 +6,18 @@ import { upload } from "../middlewares/upload";
 const router = Router();
 
 router.post("/login", loginUser);
+
+// 同一个路由 url，请求方法不同 , 对应的处理函数也不同 ;
 router
   .route("/")
   .post(upload.single("avatar"), registerUser)
   .get(authGuard, getAllUsers);
+
 /* router.route("/refresh").post(refreshAuth); */
-  router.route("/:id").get(getUserById);
-  router.route("/:id/follow").get(authGuard, followUser);
-  router.route("/:id/unfollow").get(authGuard, unfollowUser);
-  router.route("/:id/edit").put(authGuard, upload.single("avatar"), editUser);
+router.route("/:id").get(getUserById);
+router.route("/:id/follow").get(authGuard, followUser);
+router.route("/:id/unfollow").get(authGuard, unfollowUser);
+router.route("/:id/edit").put(authGuard, upload.single("avatar"), editUser);
 router.route("/:id/followers").get(authGuard, getUserFollowers);
 router.route('/search/:query').get(searchUsers);
 

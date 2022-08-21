@@ -19,7 +19,7 @@ const CommentSchema: Schema = new Schema({
     ref: "User",
   },
   createdAt: { type: Date, default: Date.now },
-  postID:{type:Schema.Types.ObjectId,  ref:'Post'}
+  postID: {type:Schema.Types.ObjectId,  ref:'Post'}
 });
 
 // Initialize model for Comment Schema

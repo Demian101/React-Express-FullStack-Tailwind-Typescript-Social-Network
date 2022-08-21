@@ -25,9 +25,9 @@
     - [401 Unauthorized](#401-unauthorized)
 
 
-# Frontend
+# 前段 Frontend
 
-## 前端-项目结构:
+## Frontend - 目录结构:
 
 ```bash
 $ mddir  ( 用来创建目录树)
@@ -602,23 +602,616 @@ const RegisterScreen: React.FC = () => {
 
 
 
-# Backend
+# 后端 Backend
 
 How to Start : 
 
 ```bash
-# 开启 Mangodb 服务
-$ 
+# 开启 Mangodb 服务 : MongoDb 启动需要一个目录存放 Database :
+$ sudo mongod --dbpath  /usr/local/mongodb/data/db
 
+# 项目启动 :
 $ cd ./server
 $ yarn 
+$ yarn start
+
+# 修改完 tsx 文件后, 需要编译一次生成对应执行的 js 文件: 
+$ npm run build
+$ yarn start
+```
+
+
+
+## Backend - 目录结构:
+
+```bash
+$ mddir ./
+|-- config
+|   |-- db.ts      # connect to mongodb
+|-- controllers    # 处理数据库 / 对前端返回内容
+|   |-- commentController.ts  # 评论
+|   |-- postController.ts     # 推文
+|   |-- userController.ts     # 用户
+|-- middlewares
+|   |-- authenticate.ts       # 身份认证
+|   |-- cloudinaryConfig.ts   # cloudinary 云存储 config 配置文件
+|   |-- upload.ts             # Multer 中间件, 用于上传文件 ; 
+|-- models
+|   |-- Comment.ts
+|   |-- Post.ts
+|   |-- User.ts
+|-- routes
+|   |-- commentRoutes.ts
+|   |-- postRoutes.ts
+|   |-- userRoutes.ts
+|-- utils
+|   |-- generateToken.ts     # 生成 AccessToke & RefreshToken
+|-- index.ts
 ```
 
 
 
 
 
-找机会整理到别的地方 : 
+## 第三方 Middlewares 
+
+### 1. Multer
+
+图片上传我们可以使用 express 官方开发的第三方库：multer
+
+- `destination`   定义文件的存储位置 ; 
+- `filename` : 文件上传后的文件名 ; 
+
+```js
+import { Request } from 'express';
+import multer from 'multer';
+import path from 'path';
+
+const storage: multer.StorageEngine = multer.diskStorage({
+    destination: (req: Request, file: any, cb: any) => {
+        cb(null, 'public/')    // callback
+    },
+    filename: (req:Request, file:any, cb:any) => {
+        let ext = path.extname(file.originalname)  // 文件拓展名 ext
+        cb(null, Date.now() + ext);   // 将 ext 再次添加到末尾
+    }
+})
+```
+
+
+
+### 2. bcryptjs
+
+用户注册时，如果不对密码做一些加密处理直接明文存储到数据库中，一旦数据库泄露，对用户和公司来说，都是非常严重的问题。
+
+
+
+**MD5 :** 
+
+> MD5信息摘要算法可以产生出一个128位（16字节）的散列值（hash value），用于确保信息传输完整一致。
+>
+> 但是 , 有的网站上提供MD5解密,是因为有大量的存储空间来保存源码和加密后的密码,  解密时就是一个查询的过程 , 这种解密方式，叫做 **字典攻击**
+
+
+
+ **加盐 salt : **
+
+> 解决 **字典攻击** 的方式是 **加盐 salt。**
+>
+> 所谓**加盐**，就是在加密的基础上再加点“佐料”。这个“佐料”是系统随机生成的一个随机值，并且以随机的方式混在加密之后的密码中。
+>
+> 由于“佐料”是系统随机生成的，相同的原始密码在加入“佐料”之后，都会生成不同的字符串。
+>
+> 这样就大大的增加了破解的难度。
+
+
+
+**bcryptjs** 是 nodejs 中比较出色的一款处理加盐加密的包。
+
+```js
+// 引入 bcryptjs
+const bcryptjs = require('bcryptjs')
+// 原始密码
+const password = '123456'
+/**
+ * 加密处理 - 同步方法
+ * bcryptjs.hashSync(data, salt)
+ *    - data  要加密的数据
+ *    - slat  用于哈希密码的盐。如果指定为数字，则将使用指定的轮数生成盐并将其使用。推荐 10
+ */
+const hashPassword = bcryptjs.hashSync(password, 10)
+/**
+ * 输出
+ * 注意：每次调用输出都会不一样
+ */
+console.log(hashPassword) // $2a$10$P8x85FYSpm8xYTLKL/52R.6MhKtCwmiICN2A7tqLDh6rDEsrHtV1W
+/**
+ * 校验 - 使用同步方法
+ * bcryptjs.compareSync(data, encrypted)
+ *    - data        要比较的数据, 使用登录时传递过来的密码
+ *    - encrypted   要比较的数据, 使用从数据库中查询出来的加密过的密码
+ */
+const isOk = bcryptjs.compareSync(password, '$2a$10$P8x85FYSpm8xYTLKL/52R.6MhKtCwmiICN2A7tqLDh6rDEsrHtV1W')
+console.log(isOk)
+```
+
+
+
+在本项目中 : 
+
+`models/User.ts : `
+
+```js
+import bcrypt from "bcryptjs";
+
+UserSchema.methods.matchPassword = async function (enteredPassword: string) {
+  return await bcrypt.compare(enteredPassword, this.password);
+}
+
+// 加 salt 保存加密密码到数据库
+UserSchema.pre("save", async function (next) {
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
+});
+
+const User = model<IUser>("User", UserSchema);
+export default User;
+```
+
+
+
+调用  `user.save()`  即 `UserSchema.pre("save"` : 
+
+```tsx
+// Register Route
+const registerUser = async ( req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { username, email, avatar, password, posts } = req.body;
+    const userExists = await User.findOne({ email });
+    if (userExists) { // if user exists
+      res.status(404).json({ message: "User already exists" });
+    } else {
+      const user = new User({ username, email, password, });
+      if(req?.file) {
+        const result: any = await streamUpload(req);
+        user.avatar = result.secure_url;
+      }
+
+      const savedUser = await user.save();
+
+      res.json({
+        _id: savedUser._id,
+        username: savedUser.username,
+        email: savedUser.email,
+        avatar: savedUser.avatar,
+      });
+    }
+  }
+  catch(err){
+    res.status(500).json({message: "Something went wrong"})
+  }
+};
+```
+
+
+
+### 3. jsonwebtoken ( jwt )
+
+注意 : 
+
+- `req.user` 是在下面的 next() 里传递给下一个中间件的。
+- 也就是说，下一个中间件可以直接使用 `req.user` 来获取用户信息。 
+
+```tsx
+import { NextFunction, Request, Response } from "express";
+import jwt, { Secret } from "jsonwebtoken";
+import User from "../models/User";
+
+const authGuard = async ( req: Request, res: Response, next: NextFunction ) => {
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith("Bearer")
+  ) {
+    try {
+      const token: string = req.headers.authorization.split(" ")[1];   // 'Bearer xxxxxxxx'
+
+      // clg(decoded) : { id: '62fd9f3036e6fe1f5552de47', iat: 1660980303, exp: 1660981203 }
+      const decoded: any = jwt.verify( token, process.env.ACCESS_TOKEN as Secret );
+
+      /* clg(req.user) : {
+          _id: new ObjectId("62fd9f3036e6fe1f5552de47"),
+          username: 'aa@aa.com',
+          email: 'aa@aa.com',
+          ...
+          __v: 1  } 
+       */
+
+      // select("-password"): 表示排除掉 password 字段，不放到 req.user 里。
+      // req.user 是在下面的 next() 里传递给下一个中间件的。
+      // 也就是说，下一个中间件可以直接使用 req.user 来获取用户信息。
+      req.user = await User.findById(decoded.id).select("-password");
+      next();
+    } catch (error) { 
+      (error); // 401 Unauthorized Error
+      res.status(401).json({message: "Token failed ,you are not authorized"});
+    }
+  }
+  else{
+    res.status(401).json({message: "Token failed, no token provided"})
+  }
+};
+
+export { authGuard };
+```
+
+
+
+### compression
+
+Gzip 压缩可以大大减小响应主体的大小，从而提高 Web 应用程序的速度。 在您的 Express 应用程序中使用 compression 进行 gzip 压缩。 
+
+```js
+import compression from 'compression';
+
+// Other Middlewares
+app.use(compression());
+```
+
+> 对于生产中的高流量网站，实施压缩的最佳方法是在反向代理级别实施它。 在这种情况下，您不需要使用 compression 中间件。 有关在 Nginx 中启用 [gzip](https://www.zhihu.com/search?q=gzip&search_source=Entity&hybrid_search_source=Entity&hybrid_search_extra={"sourceType"%3A"article"%2C"sourceId"%3A"417443306"}) 压缩的详细信息，请参阅 Nginx 文档中的模块 ngx_http_gzip_module。
+
+
+
+
+
+-----
+
+
+
+> jwt 不懂的话 , 详见 `鉴权.md`  笔记 , 或者直接看下面 : 
+
+用户的信息通过 Token 字符串的形式，保存在客户端浏览器中。服务器通过还原 Token 字符串的形式来认证用户的身份。
+
+![](http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-07-17-021906.png)
+
+JWT 通常由三部分组成，分别是 Header(头部)、Payload(有效荷载)、Signature(签名)。
+
+三者之间使用点号 .  分隔，格式如下:
+
+```
+Header.Payload.Signature
+```
+
+- Payload 部分才是真正的用户信息，它是用户信息经过加密之后生成的字符串。 
+- Header 和 Signature 是安全性相关的部分，只是为了保证 Token 的安全性。
+
+
+
+客户端收到服务器返回的 JWT 之后，通常会将它储存在 **localStorage** 或 sessionStorage 中。
+
+此后，客户端每次与服务器通信，都要带上这个 JWT 的字符串，从而进行身份认证。
+
+推荐的做法是**把** **JWT** **放在** **HTTP** **请求头的** **Authorization** **字段中**，格式如下:
+
+```
+Authorization: `Bear ${Token}`
+```
+
+
+
+## Models
+
+### 1. Post 推文 : 
+
+```tsx
+import mongoose, { Schema, Document ,model} from 'mongoose';
+
+export interface IPost extends Document {
+  text: string;
+  username: string;
+  createdAt: Date;
+  image:string,
+  visibility: string,
+  user: string;
+  likes?:Array<object>;
+}
+
+/*  对于一则推文 :
+  1. text 内容必填;
+  2. 可以设置可见性;
+  3. user ref (外键) 为 user , 标识了发布这个推文的用户;
+  4. comments ref, 标识了这个推文对应的评论;
+*/
+const PostSchema: Schema  = new Schema({
+    text: { type: String, required: true },
+    username: { type: String, required: true },
+    avatar: {type:String ,  required: true},
+    createdAt: { type: Date, default: Date.now },
+    visibility: {
+      type: String,
+      enum : ["public", "private"],
+      default: "public"
+  },
+    image: { type: String,  },
+    user: { type: Schema.Types.ObjectId, ref: "User", },
+    likes:[ { type: Schema.Types.ObjectId, ref: "User", default: 0 } ],
+    comments:[ { type: Schema.Types.ObjectId, ref: "Comment" } ],
+  },
+  { collection: "posts" }
+);
+
+const Post = model<IPost>("Post", PostSchema);
+export default Post;
+```
+
+
+
+### 2. User 
+
+```tsx
+import mongoose, { Schema, Document, model } from "mongoose";
+import bcrypt from "bcryptjs";
+import Post from './Post';
+export interface IUser extends Document {
+  username: string;
+  password: string;
+  email: string;
+  avatar?: string;
+  matchPassword: any;
+  posts?: Array<object>;
+}
+
+const UserSchema: Schema = new Schema(
+  {
+    username: { type: String, },
+    email: { type: String, required: true, unique: true, },
+    password: { type: String, required: true, },
+    avatar: { 
+      type: String,
+      default: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQdGr3fTJlsjdAEiSCDznslzUJXqeI22hIB20aDOvQsf9Hz93yoOiLaxnlPEA&s",
+    },
+    posts: [{ type: Schema.Types.ObjectId, ref: "Post" }  ],
+    following: [{ type: Schema.Types.ObjectId, ref: "User" } ],
+    followers: [{ type: Schema.Types.ObjectId, ref: "User" }],
+  },
+  { collection: "users", timestamps: true }
+);
+
+// 比较客户端传过来的密码，和数据库中是否一致
+// this.password 即 UserSchema 的实例的 password 字段，即数据库中的 password 字段
+UserSchema.methods.matchPassword = async function (enteredPassword: string) {
+  return await bcrypt.compare(enteredPassword, this.password);
+}
+
+// 加 salt 保存加密密码到数据库
+UserSchema.pre("save", async function (next) {
+  // console.log("Run UserSchema.pre(save.. this", this);
+  // if (!this.isModified('password')) {
+  //   next();
+  // }
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
+});
+
+
+const User = model<IUser>("User", UserSchema);
+export default User;
+```
+
+
+
+## Controllers
+
+`userController.tsx`
+
+```js
+import cloudinary from "cloudinary";
+import { NextFunction, Request, Response } from "express";
+import jwt, { Secret } from "jsonwebtoken";
+import streamifier from "streamifier";
+import Comment from "../models/Comment";
+import Post from "../models/Post";
+import User from "../models/User";
+import { generateAccessToken, generateRefreshToken } from "../utils/generateToken";
+
+let refreshTokens: Array<object | string> = [];
+
+const loginUser = async (req: Request, res: Response, next: NextFunction) => {
+  try{
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
+    /*
+      使用 matchPassword 对比 [前端] 传的 password 和 [数据库] 里的 password
+      matchPassword: bcrypt.compare(enteredPassword, this.password);
+       - `this.password` is the hashed password in the database, 是 UserSchema 实例的 password。      
+     */
+    if (user && (await user.matchPassword(password))) { 
+
+      /* generateAccessToken :
+          - 将用户的信息加密成 JWT 字符串，响应给客户端
+          - secret 密钥 (ACCESS_TOKEN) 是一个自定义的字符串，用于加密  */
+      const accessToken = generateAccessToken(user._id);
+      // 响应给客户端 /login 的 response ：
+      res.json({
+        _id: user._id,
+        username: user.username,
+        email: user.email,
+        avatar: user.avatar,
+        accessToken,
+      });
+    }
+  }
+  catch(err){
+    res.status(500).json({message: "Something went wrong"})
+  }
+};
+
+
+const registerUser = async ( req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { username, email, avatar, password, posts } = req.body;
+    const userExists = await User.findOne({ email });
+    if (userExists) {    // if user exists
+      res.status(409).json({ message: "User already exists" });
+    } else {
+      const user = new User({ username, email, password, });
+      if(req?.file) {  // req 不一定有 .file 属性， 所以用 ? 防止报错；
+        const result: any = await streamUpload(req);   // streamUpload 是 Promise, 上面定义了
+        user.avatar = result.secure_url;
+      }
+
+      const savedUser = await user.save();
+      // console.log("Run user.save()", savedUser);
+      const accessToken = generateAccessToken(savedUser._id);
+      const refreshToken = generateRefreshToken(savedUser._id);
+
+      /* 将 accessToken 响应给客户端，客户端将 accessToken 存储在 localStorage 中
+         之后客户端每次请求都会带上 accessToken, 服务端会验证 accessToken, 确认用户身份, 
+         然后响应数据, 或者拒绝请求, 返回 401, 403 等错误码, 以及错误信息 */
+      res.json({
+        _id: savedUser._id,
+        username: savedUser.username,
+        email: savedUser.email,
+        avatar: savedUser.avatar,
+        accessToken,
+      });
+    }
+  }
+  catch(err){
+    res.status(500).json({message: "Something went wrong"})
+  }
+};
+```
+
+
+
+## Routes
+
+`userRoutes.tsx`
+
+```tsx
+import { Router } from "express";
+import { editUser, followUser, getAllUsers, getUserById, getUserFollowers, loginUser, registerUser, searchUsers, unfollowUser } from "../controllers/userController";
+import { authGuard } from "../middlewares/authenticate";
+// User Routes
+import { upload } from "../middlewares/upload";
+const router = Router();
+
+router.post("/login", loginUser);
+
+// 同一个路由 url，请求方法不同 , 对应的处理函数也不同 ;
+router
+  .route("/")
+  //.post(upload.single("avatar"), registerUser)
+  .get(authGuard, getAllUsers);
+
+/* router.route("/refresh").post(refreshAuth); */
+router.route("/:id").get(getUserById);
+router.route("/:id/follow").get(authGuard, followUser);
+router.route("/:id/unfollow").get(authGuard, unfollowUser);
+router.route("/:id/edit").put(authGuard, upload.single("avatar"), editUser);
+router.route("/:id/followers").get(authGuard, getUserFollowers);
+router.route('/search/:query').get(searchUsers);
+
+export default router;
+```
+
+
+
+`postRoutes.tsx`
+
+```tsx
+import express from 'express';
+import { addPost, deletePost, getPrivatePosts, getPublicPosts, likePost, unlikePost } from '../controllers/postController';
+import { authGuard } from "../middlewares/authenticate";
+import { upload } from '../middlewares/upload';
+const router = express.Router();
+
+// 同一个路由 url，请求方法不同 , 对应的处理函数也不同 ;
+router.route('/').get(authGuard,getPublicPosts).post(authGuard, upload.single('image'), addPost)
+router.get('/myposts', authGuard, getPrivatePosts);
+router.route('/like').post(authGuard, likePost);
+router.route('/unlike').post(authGuard, unlikePost);
+router.route('/:id').delete(authGuard, deletePost);
+export default router;
+```
+
+
+
+## `index.tsx` 
+
+
+
+```js
+import cloudinary from "cloudinary";
+import compression from 'compression';
+import cors from "cors";
+import dotenv from 'dotenv';
+import express, { Express, Request, Response } from "express";
+import helmet from 'helmet';
+import morgan from 'morgan';
+import connectDb from "./config/db";
+import commentRoutes from "./routes/commentRoutes";
+import postRoutes from "./routes/postRoutes";
+import userRoutes from "./routes/userRoutes";
+
+
+dotenv.config({
+  path:"./.env"
+});
+
+// define port
+const PORT =  process.env.PORT || 8090;
+console.log("Port is : ", process.env.PORT)
+console.log("CLOUDINARY_API_SECRET is : ", process.env.CLOUDINARY_API_SECRET)
+
+// initialize express
+const app: Express = express();
+
+// initialize helmet to secure express app
+app.use(helmet());
+
+//connect to db
+connectDb();
+
+// configure cloudinary 
+
+// cloudinary.v2.config({
+//   cloud_name: "social-network-101",
+//   api_key: "397828424674875",
+//   api_secret: "ZRMnO8CC7-SY-kUOXU9sjGRRNNc",
+// });
+
+cloudinary.v2.config({
+  cloud_name: "dk8z3ef82",
+  api_key: "711728519188514",
+  api_secret: "KBhbiW3Jak0Bn3gbfy_cfPT2_HE",
+});
+
+
+// initialize cors 处理跨域问题
+app.use(cors({ origin: "*", credentials:true, }));
+
+
+// Other Middlewares
+app.use(compression());
+
+app.use(morgan('dev'));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Routes
+app.get("/", (req: Request, res: Response) => {
+  res.send('<h1>Social Network API</h1>');
+});
+app.use("/posts", postRoutes);
+app.use("/auth", userRoutes);
+app.use("/comment"  ,commentRoutes);
+
+// initialize server
+app.listen(PORT, () => {
+  console.log(`Server is running in port ${PORT}`);
+});
+```
 
 
 
@@ -776,4 +1369,12 @@ XML-RPC 协议简单、功能够用，各种语言的实现都有。它的使用
 **`401 Unauthorized`**  客户端错误，指的是由于缺乏目标资源要求的身份验证凭证，发送的请求未得到满足。
 
 虽然 HTTP 标准指定了"unauthorized"，但从语义上来说，这个响应意味着"unauthenticated"。也就是说，客户端必须对自身进行身份验证才能获得请求的响应。
+
+
+
+
+
+# Todo
+
+1. 用户已存在的状态码, 不应该是 404 吧 ..前端也没做适配提示 ; 
 

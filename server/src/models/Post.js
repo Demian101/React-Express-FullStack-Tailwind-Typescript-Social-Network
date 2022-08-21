@@ -11,26 +11,10 @@ var PostSchema = new mongoose_1.Schema({
         enum: ["public", "private"],
         default: "public"
     },
-    image: {
-        type: String,
-    },
-    user: {
-        type: mongoose_1.Schema.Types.ObjectId,
-        ref: "User",
-    },
-    likes: [
-        {
-            type: mongoose_1.Schema.Types.ObjectId,
-            ref: "User",
-            default: 0,
-        }
-    ],
-    comments: [
-        {
-            type: mongoose_1.Schema.Types.ObjectId,
-            ref: 'Comment',
-        }
-    ]
+    image: { type: String, },
+    user: { type: mongoose_1.Schema.Types.ObjectId, ref: "User", },
+    likes: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "User", default: 0 }],
+    comments: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "Comment" }],
 }, { collection: "posts" });
 var Post = (0, mongoose_1.model)("Post", PostSchema);
 exports.default = Post;
