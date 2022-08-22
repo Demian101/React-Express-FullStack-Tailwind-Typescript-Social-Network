@@ -62,7 +62,7 @@ const registerUser = async ( req: Request, res: Response, next: NextFunction) =>
       res.status(409).json({ message: "User already exists" });
     } else {
       const user = new User({ username, email, password, });
-      if(req?.file) {  // req 不一定有 .file 属性， 所以用 ? 防止报错；
+      if(req?.file) {    // req 不一定有 .file 属性， 所以用 ? 防止报错；
         const result: any = await streamUpload(req);   // streamUpload 是 Promise, 上面定义了
         user.avatar = result.secure_url;
       }
