@@ -604,8 +604,6 @@ const RegisterScreen: React.FC = () => {
 
 
 
-
-
 ## React.memo 与 useMemo
 
 没用到的父级结构参数的变化不要 re-render 子组件, 保证性能优化 ; 

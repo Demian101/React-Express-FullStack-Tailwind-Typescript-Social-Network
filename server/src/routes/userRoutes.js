@@ -7,9 +7,10 @@ var authenticate_1 = require("../middlewares/authenticate");
 var upload_1 = require("../middlewares/upload");
 var router = (0, express_1.Router)();
 router.post("/login", userController_1.loginUser);
+// 同一个路由 url，请求方法不同 , 对应的处理函数也不同 ;
 router
     .route("/")
-    //.post(upload.single("avatar"), registerUser)
+    .post(upload_1.upload.single("avatar"), userController_1.registerUser)
     .get(authenticate_1.authGuard, userController_1.getAllUsers);
 /* router.route("/refresh").post(refreshAuth); */
 router.route("/:id").get(userController_1.getUserById);

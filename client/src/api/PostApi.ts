@@ -13,7 +13,7 @@ export async function fetchPosts() {
       new Promise((resolve,reject) => {
       return Promise.reject(err); 
     })
-    }  
+  }
 }
 
 export async function addPost(data:IPost[])  {

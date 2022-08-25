@@ -14,9 +14,8 @@ var db_1 = __importDefault(require("./config/db"));
 var commentRoutes_1 = __importDefault(require("./routes/commentRoutes"));
 var postRoutes_1 = __importDefault(require("./routes/postRoutes"));
 var userRoutes_1 = __importDefault(require("./routes/userRoutes"));
-dotenv_1.default.config({
-    path: "./.env"
-});
+// loads environment variables from a `.env` file into `process.env`. 
+dotenv_1.default.config({ path: "./.env" });
 // define port
 var PORT = process.env.PORT || 8090;
 console.log("Port is : ", process.env.PORT);
@@ -34,15 +33,12 @@ app.use((0, helmet_1.default)());
 //   api_secret: "ZRMnO8CC7-SY-kUOXU9sjGRRNNc",
 // });
 cloudinary_1.default.v2.config({
-    cloud_name: "dk8z3ef82",
-    api_key: "711728519188514",
-    api_secret: "KBhbiW3Jak0Bn3gbfy_cfPT2_HE",
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
 });
-// initialize cors
-app.use((0, cors_1.default)({
-    origin: "*",
-    credentials: true,
-}));
+// initialize cors 处理跨域问题
+app.use((0, cors_1.default)({ origin: "*", credentials: true, }));
 // Other Middlewares
 app.use((0, compression_1.default)());
 app.use((0, morgan_1.default)('dev'));
